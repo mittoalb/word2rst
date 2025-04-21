@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Offline WYSIWYG to reStructuredText</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 30px;
+      background-color: #e9eef4;
+    }
+    #editor, #output {
+      width: 100%;
+    }
+    #toolbar {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    #toolbar select, #toolbar button {
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #content {
+      height: 400px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow-y: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 400px;
+      font-family: monospace;
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div id="editor">
+  <h3>Editor</h3>
+  <div id="toolbar">
+    <select onchange="execCmd('formatBlock', this.value)">
+      <option value="">Normal</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="blockquote">Blockquote</option>
+      <option value="pre">Code Block</option>
+    </select>
+    <button onclick="execCmd('bold')"><b>B</b></button>
+    <button onclick="execCmd('italic')"><i>I</i></button>
+    <button onclick="execCmd('underline')"><u>U</u></button>
+    <button onclick="execCmd('foreColor', 'red')">Red</button>
+    <button onclick="execCmd('backColor', 'yellow')">Yellow BG</button>
+    <button onclick="execCmd('insertUnorderedList')">• List</button>
+    <button onclick="execCmd('insertOrderedList')">1. List</button>
+    <button onclick="execCmd('justifyLeft')">Left</button>
+    <button onclick="execCmd('justifyCenter')">Center</button>
+    <button onclick="execCmd('justifyRight')">Right</button>
+    <button onclick="insertTable()">Table</button>
+    <button onclick="insertLink()">Link</button>
+    <button onclick="insertImage()">Image</button>
+    <button onclick="convertToRST()">Convert</button>
+    <button onclick="saveRST()">Save .rst</button>
+  </div>
+  <div id="content" contenteditable="true"></div>
+</div>
+
+<div id="output">
+  <h3>reStructuredText Output</h3>
+  <textarea id="rst-output" readonly></textarea>
+</div>
+
+<script>
+function execCmd(cmd, val = null) {
+  document.execCommand(cmd, false, val);
+}
+
+function insertTable() {
+  const html = '<table><tr><th>Header 1</th><th>Header 2</th></tr><tr><td>Data 1</td><td>Data 2</td></tr></table>';
+  document.execCommand('insertHTML', false, html);
+}
+
+function insertLink() {
+  const url = prompt("Enter URL:");
+  if (url) document.execCommand("createLink", false, url);
+}
+
+function insertImage() {
+  const url = prompt("Enter image URL or data URI:");
+  if (url) document.execCommand("insertImage", false, url);
+}
+
+function convertToRST() {
+  const html = document.getElementById('content').innerHTML;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+
+  function convertTable(table) {
+    let rows = Array.from(table.querySelectorAll('tr')).map(row =>
+      Array.from(row.children).map(cell => cell.textContent.trim())
+    );
+    let colWidths = rows[0].map((_, i) =>
+      Math.max(...rows.map(row => row[i]?.length || 0))
+    );
+    const sep = '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
+    const formatted = rows.map((row, i) =>
+      '| ' + row.map((cell, j) => cell.padEnd(colWidths[j])).join(' | ') + ' |\n' +
+      (i === 0 ? sep : '')
+    ).join('');
+    return sep + formatted + sep;
+  }
+
+  function walk(node) {
+    if (node.nodeType === 3) return node.nodeValue;
+    if (node.nodeType !== 1) return '';
+    const tag = node.tagName.toLowerCase();
+    const inner = Array.from(node.childNodes).map(walk).join('');
+
+    switch (tag) {
+      case 'b': case 'strong': return `**${inner}**`;
+      case 'i': case 'em': return `*${inner}*`;
+      case 'u': return inner;
+      case 'h1': return `\n${inner}\n${'='.repeat(inner.length)}\n`;
+      case 'h2': return `\n${inner}\n${'-'.repeat(inner.length)}\n`;
+      case 'li': return `- ${inner}\n`;
+      case 'ul':
+      case 'ol': return `\n${inner}`;
+      case 'pre': return `::\n\n  ${inner.replace(/\n/g, '\n  ')}\n`;
+      case 'blockquote': return `\n  ${inner.replace(/\n/g, '\n  ')}\n`;
+      case 'a': return `\`${inner} <${node.getAttribute('href')}>\`_`;
+      case 'img': return `.. image:: ${node.getAttribute('src')}\n`;
+      case 'br': return '\n';
+      case 'p': return `${inner}\n\n`;
+      case 'table': return convertTable(node) + '\n';
+      default: return inner;
+    }
+  }
+
+  const rst = walk(div).trim();
+  document.getElementById('rst-output').value = rst;
+}
+
+function saveRST() {
+  const text = document.getElementById('rst-output').value;
+  let filename = prompt("Enter filename (without extension):", "document");
+  if (!filename) return;
+  if (!filename.endsWith('.rst')) filename += '.rst';
+
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+</script>
+
+</body>
+</html>
+
