@@ -10,8 +10,7 @@ No servers, no cloud, no account needed — just open `index.html` in your brows
 
 It can be found at the following link:
 
-[https://mittoalb.github.io/word2rst/
-](url)
+[https://mittoalb.github.io/word2rst/index.html](url)
 
 ## Features
 
