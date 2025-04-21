@@ -27,6 +27,6 @@ No servers, no cloud, no account needed — just open `index.html` in your brows
 3. Edit text on the left, copy or save `.rst` from the right
 
 ```bash
-git clone https://github.com/yourusername/word2rst.git
+git clone https://github.com/mittoalb/word2rst.git
 cd word2rst
 open index.html  # or double click
