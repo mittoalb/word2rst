@@ -1,4 +1,4 @@
-# Word2RST – Offline WYSIWYG Editor to reStructuredText
+# Word2RST – WYSIWYG Editor to reStructuredText
 
 This project is a **fully offline** WYSIWYG HTML editor that instantly converts styled text, tables, links, images, and more into **reStructuredText (.rst)** format.
 
