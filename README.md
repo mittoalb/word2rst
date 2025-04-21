@@ -6,6 +6,13 @@ No servers, no cloud, no account needed — just open `index.html` in your brows
 
 ---
 
+# Online version
+
+It can be found at the following link:
+
+[https://mittoalb.github.io/word2rst/
+](url)
+
 ## Features
 
 - Live WYSIWYG editor (bold, italic, underline, color, alignment, lists, tables, links, images)
