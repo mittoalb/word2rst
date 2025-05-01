@@ -179,19 +179,30 @@ function convertToRST() {
 
   function convertTable(table) {
     let rows = Array.from(table.querySelectorAll('tr')).map(row =>
-      Array.from(row.children).map(cell => cell.textContent.trim())
+        Array.from(row.children).map(cell => cell.textContent.trim())
     );
-    let colWidths = rows[0].map((_, i) =>
-      Math.max(...rows.map(row => row[i]?.length || 0))
-    );
-    const sep = '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
-    const formatted = rows.map((row, i) =>
-      '| ' + row.map((cell, j) => cell.padEnd(colWidths[j])).join(' | ') + ' |\n' +
-      (i === 0 ? sep : '')
-    ).join('');
-    return sep + formatted + sep;
-  }
 
+    let colWidths = rows[0].map((_, i) =>
+        Math.max(...rows.map(row => row[i]?.length || 0))
+    );
+
+    const createSeparator = (char = '-') =>
+        '+' + colWidths.map(w => char.repeat(w + 2)).join('+') + '+\n';
+
+    const sepHeader = createSeparator('=');
+    const sepRow = createSeparator('-');
+
+    let formatted = rows.map((row, i) => {
+        let line = '| ' + row.map((cell, j) => cell.padEnd(colWidths[j])).join(' | ') + ' |\n';
+        if (i === 0) {
+            return sepRow + line + sepHeader;
+        } else {
+            return line + sepRow;
+        }
+    }).join('');
+
+    return formatted;
+}
   function walk(node) {
     if (node.nodeType === 3) return node.nodeValue;
     if (node.nodeType !== 1) return '';
